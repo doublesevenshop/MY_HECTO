@@ -1,22 +1,24 @@
-use crossterm::event::{read, Event, Event::Key, KeyCode::Char, KeyEvent, KeyModifiers};
+use crossterm::event::{read, Event::{self, Key}, KeyCode::Char, KeyEvent, KeyModifiers, ModifierKeyCode};
 mod terminal;
 use terminal::Terminal;
 
 pub struct Editor {
-    should_quit: bool,
+    should_quit: bool,  // If someone push ctrl+o, should quit. 
 }
 
 impl Editor {
+    // open to normal user
     pub const fn default() -> Self {
-        Self { should_quit: false }
+        Self {should_quit: false}
     }
+    // start run, 3 step: init, repl, terminate. 
     pub fn run(&mut self) {
         Terminal::initialize().unwrap();
         let result = self.repl();
         Terminal::terminate().unwrap();
         result.unwrap();
     }
-
+    // used by yourself, you need to refreash the screen and checkout if quit.
     fn repl(&mut self) -> Result<(), std::io::Error> {
         loop {
             self.refresh_screen()?;
@@ -24,14 +26,17 @@ impl Editor {
                 break;
             }
             let event = read()?;
-            self.evaluate_event(&event);
+            let _ = self.evaluate_event(&event);
         }
+
         Ok(())
+
     }
     fn evaluate_event(&mut self, event: &Event) {
-        if let Key(KeyEvent {
+        // monitor the keyboard the match the code and modifiers
+        if let Key(KeyEvent{
             code, modifiers, ..
-        }) = event
+        }) = event 
         {
             match code {
                 Char('o') if *modifiers == KeyModifiers::CONTROL => {
@@ -42,12 +47,13 @@ impl Editor {
         }
     }
     fn refresh_screen(&self) -> Result<(), std::io::Error> {
-        if self.should_quit {
+        if self.should_quit == true {
             Terminal::clear_screen()?;
             print!("Goodbye.\r\n");
+            
         } else {
-            Self::draw_rows()?;
-            Terminal::move_cursor_to(0, 0)?;
+            let _ = Self::draw_rows();
+            let _ = Terminal::move_cursor_to(0, 0);
         }
         Ok(())
     }
@@ -59,6 +65,8 @@ impl Editor {
                 print!("\r\n");
             }
         }
+        
         Ok(())
     }
+    
 }
