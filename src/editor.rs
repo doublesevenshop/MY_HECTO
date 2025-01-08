@@ -1,6 +1,12 @@
-use crossterm::event::{read, Event::{self, Key}, KeyCode::Char, KeyEvent, KeyModifiers, ModifierKeyCode};
+use crossterm::event::{
+    read, 
+    Event::{self, Key}, 
+    KeyCode::Char, 
+    KeyEvent, 
+    KeyModifiers, 
+};
 mod terminal;
-use terminal::Terminal;
+use terminal::{Terminal, Position, Size};
 
 pub struct Editor {
     should_quit: bool,  // If someone push ctrl+o, should quit. 
@@ -47,25 +53,30 @@ impl Editor {
         }
     }
     fn refresh_screen(&self) -> Result<(), std::io::Error> {
+        Terminal::hind_cursor()?;
+
         if self.should_quit == true {
             Terminal::clear_screen()?;
-            print!("Goodbye.\r\n");
+            Terminal::print("Goodbye!\r\n")?;
             
         } else {
-            let _ = Self::draw_rows();
-            let _ = Terminal::move_cursor_to(0, 0);
+            let _ = Self::draw_rows()?;
+            Terminal::move_cursor_to(Position{x:0, y:0})?;
         }
+        Terminal::show_cursor()?;
+        Terminal::execute()?;
         Ok(())
     }
     fn draw_rows() -> Result<(), std::io::Error> {
-        let height = Terminal::size()?.1;
+        let Size{height, ..} = Terminal::size()?;
+
         for current_row in 0..height {
-            print!("~");
+            Terminal::clear_line()?;
+            Terminal::print("~")?;
             if current_row + 1 < height {
-                print!("\r\n");
+                Terminal::print("\r\n")?;
             }
         }
-        
         Ok(())
     }
     

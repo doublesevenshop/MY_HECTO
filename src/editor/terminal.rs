@@ -1,37 +1,70 @@
-use crossterm::cursor::MoveTo;
+use crossterm::cursor::{Hide, MoveTo, Show};
+use crossterm::queue;
+use crossterm::style::Print;
 use crossterm::execute;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, size, Clear, ClearType};
-use std::io::stdout;
+use std::io::{stdout, Error, Write};
+
+#[derive(Copy, Clone)]
+pub struct Size {
+    pub height: u16,
+    pub width: u16,
+}
+#[derive(Copy, Clone)]
+pub struct Position {
+    pub x: u16,
+    pub y: u16,
+}
 
 pub struct Terminal {}
 
 
 impl Terminal {
-    // App has finished, we need to free the resource(raw_mode)
     pub fn terminate() -> Result<(), std::io::Error> {
-        let _ = disable_raw_mode();
+        Self::execute()?;
+        disable_raw_mode()?;
         Ok(())
     }
-    // init, start the raw_mode, and clear the screen and move the cursor to (0, 0)
     pub fn initialize() -> Result<(), std::io::Error> {
-        let _ = enable_raw_mode();
+        enable_raw_mode()?;
         Self::clear_screen()?;
-        let _ = Self::move_cursor_to(0, 0);
+        Self::move_cursor_to(Position { x: 0, y: 0})?;
+        Self::execute()?;
         Ok(())
 
     }
-    // clear the screen, execute the execute!
     pub fn clear_screen() -> Result<(), std::io::Error> {
-        let _ = execute!(stdout(), Clear(ClearType::All));
+        queue!(stdout(), Clear(ClearType::All))?;
         Ok(())
     }
-    // move the cursor to the coordinate 
-    pub fn move_cursor_to(x: u16, y:u16) -> Result<(), std::io::Error> {
-        execute!(stdout(), MoveTo(x, y))?;
+    pub fn clear_line() -> Result<(), Error> {
+        queue!(stdout(), Clear(ClearType::CurrentLine))?;
         Ok(())
     }
-    pub fn size() -> Result<(u16, u16), std::io::Error> {
-        size()
+    pub fn move_cursor_to(position: Position) -> Result<(), std::io::Error> {
+        queue!(stdout(), MoveTo(position.x, position.y))?;
+        Ok(())
+    }
+    pub fn hind_cursor() -> Result<(), Error> {
+        queue!(stdout(), Hide)?;
+        Ok(())
+    }
+    pub fn show_cursor() -> Result<(), Error> {
+        queue!(stdout(), Show)?;
+        Ok(())
+    }
+    pub fn size() -> Result<Size, Error> {
+        let (width, height) = size()?;
+        Ok(Size { height, width })
+    }
+    pub fn print(string: &str) -> Result<(), Error> {
+        queue!(stdout(), Print(string))?;
+        Ok(())
+    }
+    
+    pub fn execute() -> Result<(), Error> {
+        stdout().flush()?;
+        Ok(())
     }
 
 }
